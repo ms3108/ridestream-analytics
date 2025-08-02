@@ -11,25 +11,17 @@ import './App.css';
 // --- Child Components ---
 import ActiveRidesChart from './components/ActiveRidesChart';
 import RidesPerHourChart from './components/RidesPerHourChart';
-import VehicleDistributionChart from './components/VehicleDistributionChart';
 
 // --- Configuration ---
 const API_URL = `http://${window.location.hostname}:5001/api/metrics`;
-const MAP_CENTER = [9.9312, 76.2673];
-const MAP_ZOOM = 7; // Zoom out to see airplane routes
+const MAP_CENTER = [9.9312, 76.2673]; // Kochi, India
+const MAP_ZOOM = 12; // Zoom in for a city-level view
 
-// --- Custom Icons ---
+// --- Custom Icon ---
 const taxiIcon = new L.Icon({
     iconUrl: '/taxi.png',
     iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32],
 });
-const airplaneIcon = new L.Icon({
-    iconUrl: '/airplane.png',
-    iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -16],
-});
-const icons = { "Taxi": taxiIcon, "Airplane": airplaneIcon };
-
-const getIcon = (vehicleType) => icons[vehicleType] || taxiIcon;
 
 // --- Main App Component ---
 function App() {
@@ -49,7 +41,7 @@ function App() {
       }
     };
     fetchData();
-    const interval = setInterval(fetchData, 3000); // Fetch every 3 seconds
+    const interval = setInterval(fetchData, 3000);
     return () => clearInterval(interval);
   }, []);
 
@@ -60,7 +52,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Global Fleet Command Center</h1>
+        <h1>Live Taxi Fleet Dashboard</h1>
       </header>
 
       <div className="dashboard-grid">
@@ -68,10 +60,10 @@ function App() {
         <div className="card large-card map-card">
           <h2>Live Fleet Map</h2>
           <MapContainer center={MAP_CENTER} zoom={MAP_ZOOM} style={{ height: '100%', width: '100%' }}>
-            <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>' />
+            <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>' />
             <MarkerClusterGroup>
               {metrics.active_vehicles.map(v => (
-                <Marker key={v.ride_id} position={[v.lat, v.lng]} icon={getIcon(v.vehicle_type)}>
+                <Marker key={v.ride_id} position={[v.lat, v.lng]} icon={taxiIcon}>
                   <Popup><b>ID:</b> {v.ride_id.substring(0,8)}...<br/><b>Type:</b> {v.vehicle_type}</Popup>
                 </Marker>
               ))}
@@ -80,7 +72,7 @@ function App() {
         </div>
 
         <div className="card small-card">
-            <h2>Active Vehicles</h2>
+            <h2>Active Taxis</h2>
             <p className="stat-number active">{metrics.active_vehicles_count}</p>
         </div>
         <div className="card small-card">
@@ -93,9 +85,6 @@ function App() {
         </div>
         <div className="card medium-card">
           <RidesPerHourChart data={metrics.charts.hourly_stats} />
-        </div>
-        <div className="card medium-card">
-          <VehicleDistributionChart data={metrics.charts.vehicle_distribution} />
         </div>
 
         <div className="card large-card list-card">

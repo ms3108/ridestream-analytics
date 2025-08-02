@@ -7,8 +7,7 @@ from kafka import KafkaProducer
 
 # --- Configuration ---
 KOCHI_COORDS = {"lat": 9.9312, "lng": 76.2673}
-# Add Airplane to the simulation
-VEHICLE_TYPES = ["Sedan", "SUV", "Hatchback", "Airplane"]
+VEHICLE_TYPES = ["Sedan", "SUV", "Hatchback"]
 
 def get_kafka_producer():
     """Tries to connect to Kafka and returns a producer instance."""
@@ -26,10 +25,9 @@ def get_kafka_producer():
             time.sleep(5)
     return producer
 
-def simulate_journey(producer):
+def simulate_ride(producer):
     """
-    Simulates a full journey for a vehicle (taxi or airplane),
-    including start, in-progress, and end events.
+    Simulates a full taxi ride from start to end, including in-progress updates.
     """
     ride_id = str(uuid.uuid4())
     vehicle_type = random.choice(VEHICLE_TYPES)
@@ -48,18 +46,10 @@ def simulate_journey(producer):
 
     # --- In-Progress Events ---
     current_lat, current_lng = start_lat, start_lng
-
-    # Configure journey based on vehicle type
-    if vehicle_type == "Airplane":
-        destination_lat = start_lat + random.uniform(-5, 5) # Long distance
-        destination_lng = start_lng + random.uniform(-5, 5)
-        num_steps = random.randint(15, 25)
-        fare = round(random.uniform(200, 1000), 2)
-    else: # Taxi
-        destination_lat = start_lat + random.uniform(-0.02, 0.02) # Short distance
-        destination_lng = start_lng + random.uniform(-0.02, 0.02)
-        num_steps = random.randint(5, 10)
-        fare = round(random.uniform(5, 50), 2)
+    destination_lat = start_lat + random.uniform(-0.02, 0.02)
+    destination_lng = start_lng + random.uniform(-0.02, 0.02)
+    num_steps = random.randint(5, 10)
+    fare = round(random.uniform(5, 50), 2)
 
     lat_step = (destination_lat - start_lat) / num_steps
     lng_step = (destination_lng - start_lng) / num_steps
@@ -75,7 +65,6 @@ def simulate_journey(producer):
             "timestamp": datetime.utcnow().isoformat()
         }
         producer.send('ride_events', value=in_progress_event)
-        # print(f"Sent event: IN_PROGRESS {vehicle_type} {ride_id} step {i+1}/{num_steps}")
 
     # --- End Event ---
     end_time = datetime.utcnow()
@@ -97,7 +86,7 @@ def main():
     """Main function to produce ride events to Kafka."""
     producer = get_kafka_producer()
     while True:
-        simulate_journey(producer)
+        simulate_ride(producer)
         time.sleep(random.uniform(1, 3))
 
 if __name__ == "__main__":

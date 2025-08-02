@@ -17,7 +17,6 @@ metrics = {
     "active_vehicles": {},
     "hourly_stats": deque(maxlen=HOURS_TO_TRACK),
     "active_vehicles_history": deque(maxlen=MINUTES_TO_TRACK),
-    "vehicle_type_counts": {"Taxi": 0, "Airplane": 0}
 }
 metrics_lock = threading.Lock()
 
@@ -42,7 +41,7 @@ def kafka_consumer_worker():
                 'ride_events',
                 bootstrap_servers=['kafka:9092'],
                 auto_offset_reset='earliest',
-                group_id='metrics-group-v3',
+                group_id='metrics-group-v4', # New group id for simplicity
                 value_deserializer=lambda x: json.loads(x.decode('utf-8'))
             )
             print("Consumer connected to Kafka.")
@@ -59,12 +58,8 @@ def kafka_consumer_worker():
             metrics["latest_events"].appendleft(event)
 
             if status == 'start':
-                vehicle_type = event.get("vehicle_type", "Taxi")
-                if vehicle_type != "Airplane": vehicle_type = "Taxi"
-                metrics["vehicle_type_counts"][vehicle_type] += 1
-
                 metrics["active_vehicles"][ride_id] = {
-                    "ride_id": ride_id, "vehicle_type": vehicle_type,
+                    "ride_id": ride_id, "vehicle_type": event.get("vehicle_type"),
                     "lat": event["latitude"], "lng": event["longitude"], "timestamp": event["timestamp"]
                 }
 
@@ -121,7 +116,6 @@ def get_metrics():
             "charts": {
                 "active_history": list(metrics["active_vehicles_history"]),
                 "hourly_stats": list(metrics["hourly_stats"]),
-                "vehicle_distribution": metrics["vehicle_type_counts"]
             }
         }
     return jsonify(response_data)

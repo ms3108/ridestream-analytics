@@ -34,7 +34,7 @@ body {
 /* --- Dashboard Grid Layout --- */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr); /* Changed to 3 columns */
   grid-auto-rows: minmax(150px, auto);
   gap: 20px;
   padding: 20px;
@@ -81,7 +81,7 @@ body {
 
 
 /* --- Event List --- */
-.list-card { grid-column: 4 / 5; grid-row: 1 / span 3; }
+.list-card { grid-column: 3 / 4; grid-row: 1 / span 3; } /* Adjusted to the 3rd column */
 .ride-list {
   list-style: none;
   padding: 0;

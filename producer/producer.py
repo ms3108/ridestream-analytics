@@ -2,12 +2,13 @@ import json
 import time
 import uuid
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 from kafka import KafkaProducer
 
-# Coordinates for Kochi, India
+# --- Configuration ---
 KOCHI_COORDS = {"lat": 9.9312, "lng": 76.2673}
-VEHICLE_TYPES = ["Sedan", "SUV", "Hatchback"]
+# Add Airplane to the simulation
+VEHICLE_TYPES = ["Sedan", "SUV", "Hatchback", "Airplane"]
 
 def get_kafka_producer():
     """Tries to connect to Kafka and returns a producer instance."""
@@ -17,8 +18,7 @@ def get_kafka_producer():
             producer = KafkaProducer(
                 bootstrap_servers=['kafka:9092'],
                 value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-                retries=10,
-                request_timeout_ms=60000
+                retries=10, request_timeout_ms=60000
             )
             print("Successfully connected to Kafka.")
         except Exception as e:
@@ -26,77 +26,80 @@ def get_kafka_producer():
             time.sleep(5)
     return producer
 
-def simulate_ride(producer):
+def simulate_journey(producer):
     """
-    Simulates a full ride from start to end, including in-progress updates.
+    Simulates a full journey for a vehicle (taxi or airplane),
+    including start, in-progress, and end events.
     """
     ride_id = str(uuid.uuid4())
     vehicle_type = random.choice(VEHICLE_TYPES)
+    start_time = datetime.utcnow()
 
-    # 1. Generate Start Event
+    # --- Start Event ---
     start_lat = KOCHI_COORDS['lat'] + random.uniform(-0.05, 0.05)
     start_lng = KOCHI_COORDS['lng'] + random.uniform(-0.05, 0.05)
 
     start_event = {
-        "ride_id": ride_id,
-        "vehicle_type": vehicle_type,
-        "ride_status": "start",
-        "latitude": start_lat,
-        "longitude": start_lng,
-        "timestamp": datetime.utcnow().isoformat()
+        "ride_id": ride_id, "vehicle_type": vehicle_type, "ride_status": "start",
+        "latitude": start_lat, "longitude": start_lng, "timestamp": start_time.isoformat()
     }
     producer.send('ride_events', value=start_event)
-    print(f"Sent event: {start_event}")
+    print(f"Sent event: START {vehicle_type} {ride_id}")
 
-    # 2. Simulate In-Progress Events
+    # --- In-Progress Events ---
     current_lat, current_lng = start_lat, start_lng
-    destination_lat = start_lat + random.uniform(-0.02, 0.02)
-    destination_lng = start_lng + random.uniform(-0.02, 0.02)
 
-    num_steps = random.randint(5, 10)
+    # Configure journey based on vehicle type
+    if vehicle_type == "Airplane":
+        destination_lat = start_lat + random.uniform(-5, 5) # Long distance
+        destination_lng = start_lng + random.uniform(-5, 5)
+        num_steps = random.randint(15, 25)
+        fare = round(random.uniform(200, 1000), 2)
+    else: # Taxi
+        destination_lat = start_lat + random.uniform(-0.02, 0.02) # Short distance
+        destination_lng = start_lng + random.uniform(-0.02, 0.02)
+        num_steps = random.randint(5, 10)
+        fare = round(random.uniform(5, 50), 2)
+
     lat_step = (destination_lat - start_lat) / num_steps
     lng_step = (destination_lng - start_lng) / num_steps
 
-    for _ in range(num_steps):
-        time.sleep(random.uniform(0.5, 1.5)) # Wait between position updates
+    for i in range(num_steps):
+        time.sleep(random.uniform(0.3, 1.0))
         current_lat += lat_step
         current_lng += lng_step
 
         in_progress_event = {
-            "ride_id": ride_id,
-            "ride_status": "in_progress",
-            "latitude": current_lat,
-            "longitude": current_lng,
+            "ride_id": ride_id, "ride_status": "in_progress",
+            "latitude": current_lat, "longitude": current_lng,
             "timestamp": datetime.utcnow().isoformat()
         }
         producer.send('ride_events', value=in_progress_event)
-        print(f"Sent event: {in_progress_event}")
+        # print(f"Sent event: IN_PROGRESS {vehicle_type} {ride_id} step {i+1}/{num_steps}")
 
-    # 3. Generate End Event
-    time.sleep(1) # Final pause before ending
+    # --- End Event ---
+    end_time = datetime.utcnow()
+    duration_seconds = (end_time - start_time).total_seconds()
+
     end_event = {
-        "ride_id": ride_id,
-        "ride_status": "end",
-        "latitude": destination_lat,
-        "longitude": destination_lng,
-        "timestamp": datetime.utcnow().isoformat(),
-        "fare": round(random.uniform(5, 50), 2)
+        "ride_id": ride_id, "ride_status": "end",
+        "latitude": destination_lat, "longitude": destination_lng,
+        "timestamp": end_time.isoformat(),
+        "fare": fare,
+        "duration": round(duration_seconds, 2)
     }
     producer.send('ride_events', value=end_event)
-    print(f"Sent event: {end_event}")
+    print(f"Sent event: END {vehicle_type} {ride_id} after {duration_seconds:.2f}s")
 
     producer.flush()
 
 def main():
     """Main function to produce ride events to Kafka."""
     producer = get_kafka_producer()
-
     while True:
-        simulate_ride(producer)
-        # Wait before starting a new ride simulation
-        time.sleep(random.uniform(1, 4))
+        simulate_journey(producer)
+        time.sleep(random.uniform(1, 3))
 
 if __name__ == "__main__":
-    # A delay to wait for Kafka to be fully ready
     time.sleep(20)
     main()

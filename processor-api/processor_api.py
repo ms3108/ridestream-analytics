@@ -10,14 +10,15 @@ from kafka import KafkaConsumer
 metrics = {
     "total_rides": 0,
     "total_earnings": 0.0,
-    "latest_rides": deque(maxlen=5),
-    "heatmap_data": []
+    "latest_rides": deque(maxlen=10), # Increased size for more context
+    "heatmap_data": [],
+    "active_rides": {} # To track live location of rides
 }
 metrics_lock = threading.Lock()
 
 # --- Flask API ---
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
 def kafka_consumer_worker():
     """
@@ -30,7 +31,7 @@ def kafka_consumer_worker():
                 'ride_events',
                 bootstrap_servers=['kafka:9092'],
                 auto_offset_reset='earliest',
-                group_id='metrics-group',
+                group_id='metrics-group-v2', # New group id for the new logic
                 value_deserializer=lambda x: json.loads(x.decode('utf-8'))
             )
             print("Consumer connected to Kafka.")
@@ -40,37 +41,61 @@ def kafka_consumer_worker():
 
     for message in consumer:
         event = message.value
-        print(f"Received event: {event}")
+        ride_id = event.get("ride_id")
+        status = event.get("ride_status")
 
         with metrics_lock:
+            # Always add recent events to the latest_rides list
             metrics["latest_rides"].appendleft(event)
 
-            if event.get('ride_status') == 'start':
+            if status == 'start':
                 metrics["total_rides"] += 1
                 metrics["heatmap_data"].append({
                     "lat": event["latitude"],
                     "lng": event["longitude"],
                     "intensity": 1
                 })
-            elif event.get('ride_status') == 'end':
+                # Add ride to active rides
+                metrics["active_rides"][ride_id] = {
+                    "ride_id": ride_id,
+                    "vehicle_type": event.get("vehicle_type"),
+                    "lat": event["latitude"],
+                    "lng": event["longitude"],
+                    "timestamp": event["timestamp"]
+                }
+
+            elif status == 'in_progress':
+                if ride_id in metrics["active_rides"]:
+                    metrics["active_rides"][ride_id].update({
+                        "lat": event["latitude"],
+                        "lng": event["longitude"],
+                        "timestamp": event["timestamp"]
+                    })
+
+            elif status == 'end':
                 metrics["total_earnings"] += event.get('fare', 0.0)
+                # Remove ride from active rides
+                if ride_id in metrics["active_rides"]:
+                    del metrics["active_rides"][ride_id]
 
 @app.route('/api/metrics', methods=['GET'])
 def get_metrics():
     """
-    Returns the current ride metrics.
+    Returns the current ride metrics, including active ride locations.
     """
     with metrics_lock:
+        # Convert deque and dict values to lists for JSON serialization
         response_data = {
             "total_rides": metrics["total_rides"],
             "total_earnings": round(metrics["total_earnings"], 2),
             "latest_rides": list(metrics["latest_rides"]),
-            "heatmap_data": metrics["heatmap_data"]
+            "heatmap_data": metrics["heatmap_data"],
+            "active_rides": list(metrics["active_rides"].values()),
+            "active_rides_count": len(metrics["active_rides"])
         }
     return jsonify(response_data)
 
 # Start the Kafka consumer in a background daemon thread
-# This ensures it runs when the app starts, even with Gunicorn
 consumer_thread = threading.Thread(target=kafka_consumer_worker, daemon=True)
 consumer_thread.start()
 

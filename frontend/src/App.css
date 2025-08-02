@@ -1,3 +1,4 @@
+/* --- General Styles --- */
 .App {
   text-align: center;
 }
@@ -16,7 +17,7 @@
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0 20px;
 }
@@ -30,6 +31,7 @@
   margin-bottom: 20px;
 }
 
+/* --- Stats Container --- */
 .stats-container {
   display: flex;
   justify-content: space-around;
@@ -41,33 +43,41 @@
   background: #fff;
   padding: 25px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  flex-basis: 45%;
-  transition: transform 0.2s;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  flex: 1;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .stat-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
 }
 
 .stat-card h2 {
   margin-top: 0;
-  color: #333;
-  font-size: 1.2rem;
+  color: #555;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 .stat-card p {
   font-size: 2.5em;
   font-weight: bold;
-  color: #007bff;
   margin: 0;
+  color: #007bff;
 }
 
+.stat-card p.active {
+  color: #28a745; /* Green for active rides */
+}
+
+
+/* --- Map & Rides Containers --- */
 .map-container, .rides-container {
   background: #fff;
   padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
   margin-bottom: 30px;
   text-align: left;
 }
@@ -77,11 +87,16 @@
   border-bottom: 2px solid #eee;
   padding-bottom: 10px;
   margin-bottom: 20px;
+  font-size: 1.5rem;
+  color: #333;
 }
 
+/* --- Ride List --- */
 .ride-list {
   list-style: none;
   padding: 0;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .ride-item {
@@ -89,8 +104,9 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px;
-  border-bottom: 1px solid #eee;
-  font-family: 'Courier New', Courier, monospace;
+  border-bottom: 1px solid #f0f0f0;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  font-size: 0.9rem;
 }
 
 .ride-item:last-child {
@@ -99,17 +115,16 @@
 
 .ride-item .status {
   font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #fff;
 }
 
-.ride-item.start {
-  color: #28a745; /* Green */
-}
-
-.ride-item.end {
-  color: #dc3545; /* Red */
-}
+.ride-item.start .status { background-color: #007bff; }
+.ride-item.in_progress .status { background-color: #ffc107; color: #333}
+.ride-item.end .status { background-color: #dc3545; }
 
 .ride-item .fare {
-  color: #333;
-  font-weight: normal;
+  font-weight: bold;
+  color: #28a745;
 }

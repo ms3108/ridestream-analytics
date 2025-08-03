@@ -25,3 +25,6 @@ This project is an advanced, real-time analytics platform for a taxi service, fe
    - After the services initialize (which may take up to a minute), you can see the live dashboard by opening your web browser and navigating to:
      **[http://localhost:3000](http://localhost:3000)**
 
+<img width="1908" height="897" alt="image" src="https://github.com/user-attachments/assets/958f9317-0424-48d7-b25f-5892a8fb5bbc" />
+<img width="1898" height="880" alt="image" src="https://github.com/user-attachments/assets/83f7a3c6-4eec-4b08-89b6-a2dd7a48a7a6" />
+

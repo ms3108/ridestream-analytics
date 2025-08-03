@@ -20,27 +20,8 @@ This project is an advanced, real-time analytics platform for a taxi service, fe
 - **`processor-api`**: A Python service that consumes the data, performs real-time and historical aggregations, and exposes a rich Flask REST API.
 - **`frontend`**: A React single-page application that provides the advanced visualization dashboard, including the map and charts.
 
-## How to Run
 
-To run the entire application stack, you need to have `Docker` and `docker-compose` installed on your machine.
-
-1. **Add Taxi Icon**:
-   - Before building, place a `32x32` PNG icon named `taxi.png` in the `frontend/public/` directory. This icon is required to represent the taxis on the map.
-
-2. **Build and run the services:**
-   - Open a terminal in the project root directory and run the following command:
-   ```sh
-   docker-compose up --build
-   ```
-   This command will build the Docker images for the custom services and start all five containers.
-
-3. **View the application:**
+##View the application:**
    - After the services initialize (which may take up to a minute), you can see the live dashboard by opening your web browser and navigating to:
      **[http://localhost:3000](http://localhost:3000)**
 
-## Stopping the Application
-
-To stop all the running containers, press `Ctrl + C` in the terminal where `docker-compose` is running. To remove the containers and associated networks, you can run:
-```sh
-docker-compose down
-```
